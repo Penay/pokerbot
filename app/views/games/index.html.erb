@@ -1,0 +1,10 @@
+<h1>Game#index</h1>
+<% if !@games.empty? %>
+<% @games.each do |game| %>
+	<p>
+	<%= link_to game.name, game %>
+	</p>
+<% end %>
+<% else %>
+    No games created yet.
+<% end %>

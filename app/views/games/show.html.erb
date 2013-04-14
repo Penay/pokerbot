@@ -1,0 +1,49 @@
+Started ? <%= @game.started?%><br>
+Floop ? <%= @game.floop?%><br>
+Turn ? <%= @game.turn?%><br>
+River ? <%= @game.river?%><br>
+Ended ? <%= @game.ended?%><br>
+<h1><%= @game.name %></h1>
+<h2>Game status: <%= @game.status %></h2>
+<h2>Game pot: <%= @game.pot %></h2>
+<h2>Game blind: <%= @game.blind %></h2>
+	<h3><%= @game.user.email %></h3>
+<%# if @game.started? %>
+<p><%#= link_to "Exit game", exit_game_path, :method => :put %></p>
+<p class="player">
+  Player turn:
+  <b><%=  session[:player_turn] %></b>
+  <%=  @game.player_turn %>
+  <p>
+  Player hand:<%= @player_hand%>
+    </p>
+</p>
+
+<p class="bot">
+  Bot turn:
+  <b> <%=  session[:bot_turn] %></b>
+  <%=  @game.bot_turn %>
+<p>
+  Bot hand:
+  <%= @bot_hand %>
+</p>
+
+    <%= link_to "Check", check_game_path, :method => :put %>
+    <%= link_to "Raise", raise_bet_game_path, :method => :put %>
+    <%= link_to "Fold", fold_game_path, :method => :put %>
+<%# else %>
+<% unless @game.started?  %>
+<p><%= link_to "Start game", start_game_path, :method => :put%></p>
+<% end %>
+
+<h3>FLOOP:<%= session[:floop]%></h3>
+<h3>TURN:<%= session[:turn]%></h3>
+<h3>RIVER:<%= session[:river]%></h3>
+
+<h3>WHO WINS ? <%= who_wins?(@player_hand, @bot_hand)%></h3>
+
+
+
+
+
+
