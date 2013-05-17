@@ -11,14 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130410100643) do
-
-  create_table "decks", :force => true do |t|
-    t.text     "cards"
-    t.integer  "game_id"
-    t.datetime "created_at", :null => false
-    t.datetime "updated_at", :null => false
-  end
+ActiveRecord::Schema.define(:version => 20130324102316) do
 
   create_table "games", :force => true do |t|
     t.integer  "user_id"
@@ -30,7 +23,7 @@ ActiveRecord::Schema.define(:version => 20130410100643) do
     t.boolean  "bot_turn",    :default => false
     t.boolean  "waiting",     :default => false
     t.boolean  "started",     :default => false
-    t.boolean  "floop",       :default => false
+    t.boolean  "flop",        :default => false
     t.boolean  "turn",        :default => false
     t.boolean  "river",       :default => false
     t.boolean  "ended",       :default => false

@@ -10,6 +10,7 @@ Poker::Application.routes.draw do
        put :check
        put :raise_bet
        put :fold
+       put :call
     end
   end
 

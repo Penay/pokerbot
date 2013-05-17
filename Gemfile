@@ -9,16 +9,17 @@ gem 'sqlite3'
 
 gem 'devise'
 gem 'turbolinks'
-# group :development, :test do
-#   gem 'guard-livereload'
-# 	gem 'database_cleaner', "~> 0.9.1"
-#   gem "shoulda-matchers"
-#   gem 'rspec-rails'
-#   gem 'guard-rspec'
-#   gem 'guard-spork' 
-#   gem 'spork'
-#   gem 'factory_girl_rails'
-# end
+group :development, :test do
+  gem 'guard-livereload'
+	gem 'database_cleaner', "~> 0.9.1"
+  gem "shoulda-matchers"
+  gem 'rspec-rails'
+  gem 'guard-rspec'
+  gem 'guard-spork' 
+  gem 'spork'
+  gem 'factory_girl_rails'
+  gem "better_errors"
+end
 
 # gem "state_machine"
 

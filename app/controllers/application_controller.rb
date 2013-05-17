@@ -1,9 +1,10 @@
 class ApplicationController < ActionController::Base
   protect_from_forgery
   def after_sign_in_path_for(resource)
-    session[:bot_cards] = []
+    session[:bot] = []
     session[:player_cards] = []
-    session[:floop] = []
+    session[:player_turn] = []
+    session[:flop] = []
     session[:turn] = []
     session[:river] = []
     games_path
@@ -11,12 +12,14 @@ class ApplicationController < ActionController::Base
 
 
   def after_sign_out_path_for(resource_or_scope)
-    session[:bot_cards] = []
+    session[:bot] = []
     session[:player_cards] = []
-    session[:floop] = []
+    session[:player_turn] = []
+    session[:flop] = []
     session[:turn] = []
     session[:river] = []
     new_user_session_path
   end
+
 
 end

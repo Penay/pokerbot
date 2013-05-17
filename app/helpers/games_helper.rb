@@ -1,27 +1,30 @@
 module GamesHelper
-  def check?(turn)
-    turn == "check" ? true : false
-  end
+  include ApplicationHelper
 
-  def fold?(turn)
-    turn == "fold" ? true : false
-  end
-
-  def raise?(turn)
-    turn == "raise" ? true : false
-  end
-
-  def who_wins?(player_hand, bot_hand)
-    if player_hand > bot_hand
+  def who_wins?(player_hand, bot_hand, player_turn, bot_turn)
+    if (player_hand > bot_hand) | fold?(bot_turn)
+      warn "_"*30
+      warn "Player wins"
       message = "Player wins!"
-      current_user.wins += 1
-    elsif player_hand < bot_hand
-      message ="Bot wins!"
-      current_user.losts += 1
+    elsif (player_hand < bot_hand) | fold?(player_turn)
+      warn "_"*30
+      warn "Bot wins"
+      message ="Bot wins!" 
     elsif player_hand == bot_hand
+      warn "_"*30
+      warn "Friendship wins!"
       message = "Friendship wins!"
     end
-    current_user.save
     message
+  end
+
+  def set_session_values
+    session[:deck] = Deck.new
+    session[:player_cards] = []
+    session[:flop] = []
+    session[:turn] = []
+    session[:river] = []
+    session[:player_turn] = ""
+    session[:bot] = Bot.new
   end
 end

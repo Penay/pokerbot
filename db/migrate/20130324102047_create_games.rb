@@ -10,7 +10,7 @@ class CreateGames < ActiveRecord::Migration
       t.boolean :bot_turn, :default => false
       t.boolean :waiting, :default => false
       t.boolean :started, :default => false
-      t.boolean :floop, :default => false
+      t.boolean :flop, :default => false
       t.boolean :turn, :default => false
       t.boolean :river, :default => false
       t.boolean :ended, :default => false

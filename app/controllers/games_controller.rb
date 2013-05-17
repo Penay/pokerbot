@@ -1,8 +1,14 @@
 class GamesController < ApplicationController
   before_filter :authenticate_user!
   before_filter :check_owner, :except => [:index, :new, :create]
-  #before_filter :game_started?, :only => [:check, :raise_bet, :fold]
-  before_filter :repeated_start, :only => [:start]
+  before_filter :game_started?, :only => [:check, :raise_bet, :fold, :call]
+  before_filter :initialize_session, :only => [:show]
+
+  def initialize_session
+    if !@game.started? && !@game.ended? 
+      set_session_values
+    end 
+  end
 
   def repeated_start
     redirect_to @game, notice: "Game is already started" if @game.started?
@@ -18,18 +24,7 @@ class GamesController < ApplicationController
   end
   include GamesHelper
 
-  def turn
-    @game = Game.find(params[:id])
-  end
-
   def start
-    session[:bot_cards] = []
-    session[:player_cards] = []
-    session[:floop] = []
-    session[:turn] = []
-    session[:river] = []
-    session[:player_turn] = nil
-    session[:bot_turn] = nil
     @game = Game.find(params[:id])
     @game.started = true
     @game.ended = false
@@ -37,13 +32,14 @@ class GamesController < ApplicationController
     @game.take_bets(current_user)
     #@game.player_turn = [true, false].sample
     @game.player_turn = true
-    @game.bot_turn = !@game.player_turn
+    session[:bot] = Bot.new
     @game.save
-    session[:deck] = Deck.new
+    set_session_values
+    session[:deck].deal
     session[:player_cards].push session[:deck].deal
-    session[:bot_cards].push session[:deck].deal
+    session[:bot].cards.push session[:deck].deal
     session[:player_cards].push session[:deck].deal
-    session[:bot_cards].push session[:deck].deal
+    session[:bot].cards.push session[:deck].deal
     flash[:notice] = 'You started game.'
     redirect_to @game
   end
@@ -53,14 +49,29 @@ class GamesController < ApplicationController
   end
 
   def show
+    
     @game = Game.find(params[:id])
-    session[:deck] = Deck.new
-    @player_hand = PokerHand.new(session[:player_cards] + session[:floop] +  session[:turn] + session[:river])
-    @bot_hand = PokerHand.new(session[:bot_cards] + session[:floop] +  session[:turn] + session[:river])
+    if session[:bot].turn == "raise"
+      flash[:notice] = "Bot bet #{session[:bot].bet}"
+    end
+    @player_hand = PokerHand.new(session[:player_cards] + session[:flop] +  session[:turn] + session[:river])
+    @bot_hand = PokerHand.new(session[:bot].cards + session[:flop] +  session[:turn] + session[:river])
     if @game.ended?
-      flash[:notice] = who_wins?(@player_hand, @bot_hand)
+      @game.started = false
+      flash.now[:notice] = who_wins?(@player_hand, @bot_hand, session[:player_turn], session[:bot].turn)
+      @player_hand = @bot_hand = PokerHand.new
+      if flash[:notice] == "Player wins!"
+        current_user.wins += 1
+      elsif flash[:notice] == "Bot wins!"
+        current_user.losts += 1
+      elsif flash[:notice] == "Friendship wins!"
+        current_user.credits += @game.pot/2  
+      end
+      session = []
+      current_user.save  
       @game.ended = false
-      @game.save
+      @game.pot = 0
+      @game.save      
     end
   end
 
@@ -69,7 +80,7 @@ class GamesController < ApplicationController
     @game.destroy
     flash[:notice] = "Game is successfully deleted!"
     redirect_to root_path
-  end
+  end 
 
   def new
     @game = Game.new
@@ -87,29 +98,65 @@ class GamesController < ApplicationController
 
   def check
     @game = Game.find(params[:id])
-    check_turn(@game)
-    bot_turn(@game)
-    @game.set_status
-    @game.save
-    if next_poker_turn(@game)
-      flash[:notice] = @game.status
+    if !@game.ended?
+      check_turn(@game)
+      session[:bot].make_turn(@game, session[:player_turn], 0, session[:flop])
+      @game.set_status
+      @game.save
+      give_cardz(@game)
+      flash[:notice] = @game.status  
     else
-      flash[:notice] = "Game is ended. "
+      flash[:notice] = "Game is ended. Start new game."
     end
     redirect_to @game
   end
 
   def raise_bet
     @game = Game.find(params[:id])
-    raise_turn(@game)
+    if !@game.ended?
+      session[:player_turn] = "raise"
+      bet = raise_turn(@game)
+      session[:floop] = [] if session[:floop].nil?
+      session[:bot].make_turn(@game, session[:player_turn], bet, session[:floop] + session[:river] + session[:turn])
+      if session[:bot].turn == "fold"
+        bot_fold_turn(@game)
+      elsif session[:bot].turn == "raise"
+        current_user.credits -= session[:bot].bet
+        @game.pot += session[:bot].bet
+        bet = raise_turn(@game)
+        session[:bot].make_turn(@game, session[:player_turn], bet)       
+      else
+        @game.set_status
+        give_cardz(@game)
+        flash[:notice] = @game.status  
+      end
+    else
+      flash[:notice] = "Game is ended. Start new game."
+    end
+    @game.save
+    redirect_to @game
   end
 
   def fold
     @game = Game.find(params[:id])
-    fold_turn(@game)
-    if @game.save
-      redirect_to @game
+    if !@game.ended?
+      player_fold_turn(@game)
+      @game.save
+    else
+      flash[:notice] = "Game is ended. Start new game."
     end
+    redirect_to @game
+  end
+
+  def call
+    @game = Game.find(params[:id])
+    if !@game.ended?
+      call_turn(@game)
+      @game.save
+    else
+      flash[:notice] = "Game is ended. Start new game."
+    end
+    redirect_to @game
   end
 
   def last
@@ -117,75 +164,82 @@ class GamesController < ApplicationController
   end
 
   private
-  def bot_turn(game)
-    if game.started?
-      game.bot_turn = false
-      game.player_turn = true
-      session[:bot_turn] = "check"
-    elsif game.floop?
+
+  def give_cardz(game)
+    if game.flop?
+      session[:deck].deal
+      3.times { session[:flop].push session[:deck].deal }
     elsif game.turn?
+      session[:deck].deal
+      session[:turn].push session[:deck].deal
     elsif game.river?
+      session[:deck].deal
+      session[:river].push session[:deck].deal
     end
   end
 
-  def give_cards(game)
-    game.player_cards = game.deck.deal
-    game.bot_cards = game.deck.deal
-    game.player_cards = game.deck.deal
-    game.bot_cards = game.deck.deal
+  def bot_turn(game, bet = nil)
+    # session[:bot].make_turn(game, bet, session[:player_turn])
+    if check?(session[:player_turn])
+      session[:bot_turn] = "check"
+    elsif raise?(session[:player_turn])
+      session[:bot_turn] = "call"
+      game.pot += bet.to_i
+    end
+    game.bot_turn = false
+    game.player_turn = true
   end
 
   def raise_turn(game)
-    if game.player_turn? && !game.bot_turn
-      game.player_turn = !game.player_turn
-      game.bot_turn = true
-      session[:player_turn] = "raise"
-
-    end
+    game.bot_turn = true
+    session[:player_turn] = "raise"
+    game.pot += params[:raise_bet].to_i
+    params[:raise_bet]
   end
 
   def check_turn(game)
-    if game.player_turn? && !game.bot_turn
       game.player_turn = !game.player_turn
       game.bot_turn = true
       session[:player_turn] = "check"
-    end
   end
 
-  def fold_turn(game)
-    if game.player_turn? && !game.bot_turn
-      game.player_turn = !game.player_turn
-      game.bot_turn = true
+  def player_fold_turn(game)
       session[:player_turn] = "fold"
-      game.status = "player fold"
-      game.pot = 0
-      session[:player_cards] = []
-      session[:bot_cards] = []
-    end
+      game.status = "Player fold"
+      common_fold_things(game)
+  end
+
+  def bot_fold_turn(game)
+      game.status = "Bot fold"
+      common_fold_things(game)
   end
 
   def check_game_status
     @game = Game.find(params[:id])
     if @game.pending?
       flash[:notice] = "You should start game first."
-    elsif @game.ended?
-      who_wins?()
-      flash[:notice] = "Game is ended. You can start new game."
     end
     redirect_to :back
   end
 
-  def next_poker_turn(game)
-    if game.floop?
-      3.times { session[:floop].push session[:deck].deal }
-    elsif game.turn?
-      session[:turn].push session[:deck].deal
-    elsif game.river?
-      session[:river].push session[:deck].deal
-    elsif game.ended?
-      false     
-    end
+  def call_turn(game)
+    game.set_status
+    give_cardz(game)
+    current_user.credits -= session[:bot].bet
+    game.pot += session[:bot].bet
+    session[:player_turn] = "call"
+    session[:bot].turn = "raise called"
+    game.set_status
   end
+
+
+  def common_fold_things(game)
+      game.ended = true
+      game.started = false
+      game.flop = false
+      game.river = false
+      game.turn = false
+  end 
 
 
 end

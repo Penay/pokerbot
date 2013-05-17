@@ -3,6 +3,7 @@
 <% @games.each do |game| %>
 	<p>
 	<%= link_to game.name, game %>
+	<%= link_to "Destroy", game, method: :delete, confirm: "Are you sure ?", class: "p-l-50" %>
 	</p>
 <% end %>
 <% else %>
