@@ -19,15 +19,17 @@
     <% end %>
   </div>
 <%# if @game.started? %>
-<p><%#= link_to "Exit game", exit_game_path, :method => :put %></p>
-<p class="player">
-  Player hand
-  </p>
+<%#= link_to "Exit game", exit_game_path, :method => :put %>
+<% unless session[:player_cards].empty? %>
+    <p class="player">
+      Player hand
+    </p>
   <% session[:player_cards].each do |card| %>
+
     <%= image_tag("/assets/#{card.to_s.last}/#{card.to_s.first}.png", class: 'card')%>
   <% end %>
+<% end %>
     
-</p>
 <% if @game.started?  %>
 
   <% if raise?(session[:bot].turn) %>
