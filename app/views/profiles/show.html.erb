@@ -1,20 +1,18 @@
 <% provide(:title, current_user.email) %>
-<h1>My profile page</h1>
+<h1>Profile page</h1>
 <div class="row">
-  <aside class="span8">
     <section>
-      <h1>
+      <h2>
         <%= current_user.email %>
-      </h1>
+      </h2>
       <br>
-      <h1>
+      <h2>
         You win <%= current_user.wins %> times.
-      </h1>
+      </h2>
       <br>
-      <h1>
+      <h2>
         You lost <%= current_user.losts %> times.
-      </h1>
+      </h2>
     </section>
-  </aside>
 </div>
 
