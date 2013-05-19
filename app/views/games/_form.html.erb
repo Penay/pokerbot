@@ -11,14 +11,14 @@
 	</div>
 <% end %>
 
-<div class="field">
-	<%= f.label :name%></br>
-	<%= f.text_field :name%>
+ <div class="field">
+	 <%= f.label :blind%>
+   <%= f.select :blind, (1..10) %>
  </div>
 
- <div class="field">
-	 <%= f.label :blind%></br>
-   <%= f.select :blind, (1..10) %>
+  <div class="field">
+	 <%= f.label :bot_type %>
+   <%= f.select :bot_type, ['aggressive', 'carefull'] %>
  </div>
 
   <div class="actions">

@@ -1,8 +1,8 @@
-<h1>Game#index</h1>
+<h1>Your games</h1>
 <% if !@games.empty? %>
 <% @games.each do |game| %>
 	<p>
-	<%= link_to game.name, game %>
+	<%= link_to "game_#{game.id}", game %>
 	<%= link_to "Destroy", game, method: :delete, confirm: "Are you sure ?", class: "p-l-50" %>
 	</p>
 <% end %>

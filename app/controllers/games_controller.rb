@@ -4,6 +4,7 @@ class GamesController < ApplicationController
   before_filter :game_started?, :only => [:check, :raise_bet, :fold, :call]
   before_filter :initialize_session, :only => [:show]
 
+
   def initialize_session
     if !@game.started? && !@game.ended? 
       set_session_values
@@ -61,14 +62,33 @@ class GamesController < ApplicationController
       flash.now[:notice] = who_wins?(@player_hand, @bot_hand, session[:player_turn], session[:bot].turn)
       @player_hand = @bot_hand = PokerHand.new
       if flash[:notice] == "Player wins!"
+        current_user.credits += @game.pot
         current_user.wins += 1
+        if @game.aggressive?
+          @game.aggressive_losts += 1
+        else
+          @game.carefull_losts += 1
+        end 
       elsif flash[:notice] == "Bot wins!"
+        if @game.aggressive?
+          @game.aggressive_bank += @game.pot
+          @game.aggressive_wins += 1
+        else
+          @game.carefull_bank += @game.pot
+          @game.carefull_wins += 1
+        end  
         current_user.losts += 1
       elsif flash[:notice] == "Friendship wins!"
-        current_user.credits += @game.pot/2  
+        current_user.credits += @game.pot/2 
+        if @game.aggressive?
+          @game.aggressive_bank += @game.pot/2
+        else
+          @game.carefull_bank += @game.pot/2
+        end  
       end
-      session = []
+      session = []     
       current_user.save  
+      warn current_user.credits.inspect
       @game.ended = false
       @game.pot = 0
       @game.save      
@@ -119,20 +139,14 @@ class GamesController < ApplicationController
       session[:floop] = [] if session[:floop].nil?
       session[:bot].make_turn(@game, session[:player_turn], bet, session[:floop] + session[:river] + session[:turn])
       if session[:bot].turn == "fold"
-        bot_fold_turn(@game)
-      elsif session[:bot].turn == "raise"
-        current_user.credits -= session[:bot].bet
-        @game.pot += session[:bot].bet
-        bet = raise_turn(@game)
-        session[:bot].make_turn(@game, session[:player_turn], bet)       
-      else
-        @game.set_status
-        give_cardz(@game)
-        flash[:notice] = @game.status  
+        bot_fold_turn(@game)       
       end
     else
       flash[:notice] = "Game is ended. Start new game."
     end
+    @game.set_status
+    give_cardz(@game)
+    flash[:notice] = @game.status
     @game.save
     redirect_to @game
   end
@@ -156,6 +170,7 @@ class GamesController < ApplicationController
     else
       flash[:notice] = "Game is ended. Start new game."
     end
+    flash[:notice] = @game.status
     redirect_to @game
   end
 
@@ -210,8 +225,8 @@ class GamesController < ApplicationController
   end
 
   def bot_fold_turn(game)
-      game.status = "Bot fold"
-      common_fold_things(game)
+    game.status = "Bot fold"
+    common_fold_things(game)
   end
 
   def check_game_status
@@ -226,10 +241,10 @@ class GamesController < ApplicationController
     game.set_status
     give_cardz(game)
     current_user.credits -= session[:bot].bet
+    current_user.save
     game.pot += session[:bot].bet
     session[:player_turn] = "call"
     session[:bot].turn = "raise called"
-    game.set_status
   end
 
 

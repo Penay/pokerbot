@@ -2,8 +2,10 @@ class Game < ActiveRecord::Base
   has_one :deck
   GAME_BETS = (1..100)
 
-  attr_accessible :name, :pot, :blind, :waiting
+  attr_accessible :name, :pot, :blind, :waiting, :bot_type
   belongs_to :user
+
+  # validates :name, presence: true
   
   def set_status
     if self.started? && !self.flop? && !self.turn? && !self.river? && !self.ended?
@@ -37,7 +39,13 @@ class Game < ActiveRecord::Base
     self.save
   end
 
+  def aggressive? 
+    self.bot_type == 'aggressive' ? true : false
+  end
 
+  def carefull? 
+    self.bot_type == 'carefull' ? true : false
+  end
 
 
 end

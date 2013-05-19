@@ -1,19 +1,19 @@
 module GamesHelper
   include ApplicationHelper
 
-  def who_wins?(player_hand, bot_hand, player_turn, bot_turn)
-    if (player_hand > bot_hand) | fold?(bot_turn)
-      warn "_"*30
-      warn "Player wins"
+  def who_wins?(player_hand, bot_hand, player_turn, bot_turn) 
+    if (player_hand > bot_hand)
       message = "Player wins!"
-    elsif (player_hand < bot_hand) | fold?(player_turn)
-      warn "_"*30
-      warn "Bot wins"
+    elsif (player_hand < bot_hand)
       message ="Bot wins!" 
     elsif player_hand == bot_hand
-      warn "_"*30
-      warn "Friendship wins!"
       message = "Friendship wins!"
+    end
+    if fold? player_turn
+      message ="Bot wins!"     
+    end  
+    if fold? bot_turn
+      message ="Player wins!" 
     end
     message
   end

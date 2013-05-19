@@ -1,6 +1,8 @@
 Poker::Application.routes.draw do
   match "profile", to: 'profiles#show'
 
+  match "statistic", to: 'profiles#statistic'
+
   resources :games do
     member do
        put :join

@@ -25,15 +25,17 @@ module ApplicationHelper
   end
 
   def monster?(hand)
-    if (PokerHand.new(hand).hand_rating != 'Highest Card') & (PokerHand.new(hand).hand_rating != 'Pair')
+    if (PokerHand.new(hand) != 'Highest Card') & (PokerHand.new(hand) != 'Pair')
       true
     else
       false
     end
+  rescue
+    [true, false].sample
   end
 
   def top_pair?(hand, table_cards)
-    if PokerHand.new(hand + table_cards).hand_rating == 'Pair' 
+    if PokerHand.new(hand + table_cards) == 'Pair' 
       true if hand.cards_value.include? highest_value(table_cards)
     else
       false
@@ -41,13 +43,15 @@ module ApplicationHelper
   end
 
   def over_pair?(hand, table_cards)
-    if PokerHand.new(hand).hand_rating == 'Pair' 
+    if PokerHand.new(hand) == 'Pair' 
       if highest_value(hand) > highest_value(table_cards)
         true 
       end
     else
       false
     end
+  rescue
+    [true, false].sample
   end
 
   # def straigh_draw?(hand, table_cards)
