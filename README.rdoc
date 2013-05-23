@@ -1,7 +1,6 @@
 == Welcome to PokerBot
 
 PokerBot for NULP project.
-__________________________
 
 Firstly user should sign in, then use will be redirected to game creation.
 
